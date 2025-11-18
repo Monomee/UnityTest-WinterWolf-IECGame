@@ -133,8 +133,8 @@ GameObject:
   m_Component:
   - component: {fileID: 78672122}
   - component: {fileID: 78672125}
-  - component: {fileID: 78672124}
   - component: {fileID: 78672123}
+  - component: {fileID: 78672124}
   m_Layer: 5
   m_Name: PanelWin
   m_TagString: Untagged
@@ -201,7 +201,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 78672121}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1e8289016d380f4fba6f7c4fd1bdd77, type: 3}
+  m_Script: {fileID: 11500000, guid: 21bc20e8f91e3e343ae8f34518513113, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   btnClose: {fileID: 627799494}
@@ -1502,7 +1502,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 0}
-  m_Type: 1
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4

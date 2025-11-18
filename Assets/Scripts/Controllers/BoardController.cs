@@ -15,6 +15,8 @@ public class BoardController : MonoBehaviour
 
     private GameManager m_gameManager;
 
+    private TrayController m_trayController;
+
     private bool m_isDragging;
 
     private Camera m_cam;
@@ -43,6 +45,9 @@ public class BoardController : MonoBehaviour
 
         m_board = new Board(this.transform, gameSettings);
 
+        // find TrayController in scene (you can also inject it from GameManager)
+        m_trayController = FindObjectOfType<TrayController>();
+
         Fill();
     }
 
@@ -62,7 +67,7 @@ public class BoardController : MonoBehaviour
             case GameManager.eStateGame.PAUSE:
                 IsBusy = true;
                 break;
-            case GameManager.eStateGame.GAME_OVER:
+            case GameManager.eStateGame.GAME_LOSE:
                 m_gameOver = true;
                 StopHints();
                 break;
@@ -75,15 +80,15 @@ public class BoardController : MonoBehaviour
         if (m_gameOver) return;
         if (IsBusy) return;
 
-        if (!m_hintIsShown)
-        {
-            m_timeAfterFill += Time.deltaTime;
-            if (m_timeAfterFill > m_gameSettings.TimeForHint)
-            {
-                m_timeAfterFill = 0f;
-                ShowHint();
-            }
-        }
+        //if (!m_hintIsShown)
+        //{
+        //    m_timeAfterFill += Time.deltaTime;
+        //    if (m_timeAfterFill > m_gameSettings.TimeForHint)
+        //    {
+        //        m_timeAfterFill = 0f;
+        //        ShowHint();
+        //    }
+        //}
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -97,9 +102,36 @@ public class BoardController : MonoBehaviour
 
         if (Input.GetMouseButtonUp(0))
         {
+            // handle "click" to add item into tray when mouse up happens on the same collider it started on
+            var hit = Physics2D.Raycast(m_cam.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
+            if (hit.collider != null && m_isDragging && m_hitCollider != null && hit.collider == m_hitCollider)
+            {
+                // same collider => treat as click (not a drag-swap)
+                Cell clickedCell = hit.collider.GetComponent<Cell>();
+                if (clickedCell != null && !clickedCell.IsEmpty && m_trayController != null)
+                {
+                    // take item reference, remove from board cell first
+                    Item item = clickedCell.Item;
+
+                    bool added = m_trayController.TryAddItemToTray(item);
+                    if (!added)
+                    {
+                        // fail → giữ nguyên
+                        clickedCell.ApplyItemPosition(true);
+                    }
+                    else
+                    {
+                        // success → mới Free()
+                        clickedCell.Free();
+                        OnMoveEvent();
+                    }
+
+                }
+            }
+
             ResetRayCast();
         }
-
+        /* OLD SWAP MECHANIC - COMMENTED OUT
         if (Input.GetMouseButton(0) && m_isDragging)
         {
             var hit = Physics2D.Raycast(m_cam.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
@@ -129,6 +161,7 @@ public class BoardController : MonoBehaviour
                 ResetRayCast();
             }
         }
+        */
     }
 
     private void ResetRayCast()
@@ -182,23 +215,20 @@ public class BoardController : MonoBehaviour
         if (matches.Count > 0)
         {
             CollapseMatches(matches, null);
+            return;
         }
-        else
-        {
-            m_potentialMatch = m_board.GetPotentialMatches();
-            if (m_potentialMatch.Count > 0)
-            {
-                IsBusy = false;
 
-                m_timeAfterFill = 0f;
-            }
-            else
-            {
-                //StartCoroutine(RefillBoardCoroutine());
-                StartCoroutine(ShuffleBoardCoroutine());
-            }
+        if (!m_board.IsBoardEmpty())
+        {
+            IsBusy = false;
+            return;
         }
+        IsBusy = true;
+
+        // board empty -> WIN
+        m_gameManager.WinGame();
     }
+    
 
     private List<Cell> GetMatches(Cell cell)
     {
@@ -236,9 +266,9 @@ public class BoardController : MonoBehaviour
     {
         m_board.ShiftDownItems();
 
-        yield return new WaitForSeconds(0.2f);
+        //yield return new WaitForSeconds(0.2f);
 
-        m_board.FillGapsWithNewItems();
+        //m_board.FillGapsWithNewItems();
 
         yield return new WaitForSeconds(0.2f);
 
