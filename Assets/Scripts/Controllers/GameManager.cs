@@ -20,8 +20,10 @@ public class GameManager : MonoBehaviour
         MAIN_MENU,
         GAME_STARTED,
         PAUSE,
-        GAME_OVER,
+        GAME_WIN, //added
+        GAME_LOSE,//added
     }
+
 
     private eStateGame m_state;
     public eStateGame State
@@ -40,6 +42,7 @@ public class GameManager : MonoBehaviour
 
 
     private BoardController m_boardController;
+    private TrayController m_trayController;
 
     private UIMainManager m_uiMenu;
 
@@ -83,29 +86,27 @@ public class GameManager : MonoBehaviour
 
     public void LoadLevel(eLevelMode mode)
     {
+        // create board & tray
         m_boardController = new GameObject("BoardController").AddComponent<BoardController>();
+        m_trayController = new GameObject("TrayController").AddComponent<TrayController>();
+
         m_boardController.StartGame(this, m_gameSettings);
+        m_trayController.StartGame(this, m_gameSettings);
 
-        if (mode == eLevelMode.MOVES)
+        if (m_levelCondition != null)
         {
-            m_levelCondition = this.gameObject.AddComponent<LevelMoves>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), m_boardController);
+            Destroy(m_levelCondition);
+            m_levelCondition = null;
         }
-        else if (mode == eLevelMode.TIMER)
-        {
-            m_levelCondition = this.gameObject.AddComponent<LevelTime>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), this);
-        }
-
-        m_levelCondition.ConditionCompleteEvent += GameOver;
 
         State = eStateGame.GAME_STARTED;
     }
 
-    public void GameOver()
-    {
-        StartCoroutine(WaitBoardController());
-    }
+
+    //public void GameOver()
+    //{
+    //    StartCoroutine(WaitBoardController());
+    //}
 
     internal void ClearLevel()
     {
@@ -115,25 +116,41 @@ public class GameManager : MonoBehaviour
             Destroy(m_boardController.gameObject);
             m_boardController = null;
         }
+
+        if (m_trayController)
+        {
+            m_trayController.Clear();  
+            Destroy(m_trayController.gameObject); 
+            m_trayController = null;
+        }
     }
 
-    private IEnumerator WaitBoardController()
+
+    private IEnumerator WaitBoardController(eStateGame finalState)
     {
         while (m_boardController.IsBusy)
-        {
-            yield return new WaitForEndOfFrame();
-        }
+            yield return null;
 
         yield return new WaitForSeconds(1f);
 
-        State = eStateGame.GAME_OVER;
+        State = finalState;
 
         if (m_levelCondition != null)
         {
-            m_levelCondition.ConditionCompleteEvent -= GameOver;
-
+            m_levelCondition.ConditionCompleteEvent -= WinGame;
             Destroy(m_levelCondition);
             m_levelCondition = null;
         }
     }
+
+    public void LoseGame()
+    {
+        StartCoroutine(WaitBoardController(eStateGame.GAME_LOSE));
+    }
+
+    public void WinGame()
+    {
+        StartCoroutine(WaitBoardController(eStateGame.GAME_WIN));
+    }
+
 }

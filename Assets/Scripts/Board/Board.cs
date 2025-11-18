@@ -674,4 +674,18 @@ public class Board
             }
         }
     }
+
+    public bool IsBoardEmpty()
+    {
+        for (int x = 0; x < boardSizeX; x++)
+        {
+            for (int y = 0; y < boardSizeY; y++)
+            {
+                if (!m_cells[x, y].IsEmpty)
+                    return false;
+            }
+        }
+        return true;
+    }
+
 }
